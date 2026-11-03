@@ -25,3 +25,24 @@ class ReglaNegocio(ErrorAplicacion):
 
     def __init__(self, mensaje: str = "Regla de negocio no cumplida"):
         super().__init__(mensaje)
+
+
+class NoAutenticado(ErrorAplicacion):
+    codigo: int = 401
+
+    def __init__(self, mensaje: str = "Credenciales inválidas"):
+        super().__init__(mensaje)
+
+
+class Prohibido(ErrorAplicacion):
+    codigo: int = 403
+
+    def __init__(self, mensaje: str = "No tiene permisos para esta acción"):
+        super().__init__(mensaje)
+
+
+class CuentaBloqueada(ErrorAplicacion):
+    codigo: int = 423
+
+    def __init__(self, mensaje: str = "Cuenta bloqueada temporalmente"):
+        super().__init__(mensaje)

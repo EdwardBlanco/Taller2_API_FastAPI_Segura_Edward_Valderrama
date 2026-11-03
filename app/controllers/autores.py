@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..core.exceptions import Conflicto, NoEncontrado
@@ -6,22 +6,33 @@ from ..models import Autor, Libro
 from ..schemas.autores import AutorActualizar, AutorCrear
 
 
-def listar(db: Session, skip: int = 0, limit: int = 20, nacionalidad: str | None = None):
+def listar(
+    db: Session,
+    skip: int = 0,
+    limit: int = 10,
+    nacionalidad: str | None = None,
+) -> tuple[list[Autor], int]:
     query = select(Autor)
+    conteo = select(func.count(Autor.id))
+
     if nacionalidad:
-        query = query.where(Autor.nacionalidad.ilike(f"%{nacionalidad.strip()}%"))
-    query = query.order_by(Autor.nombre).offset(skip).limit(limit)
-    return db.scalars(query).all()
+        termino = f"%{nacionalidad.strip()}%"
+        query = query.where(Autor.nacionalidad.ilike(termino))
+        conteo = conteo.where(Autor.nacionalidad.ilike(termino))
+
+    total = db.scalar(conteo) or 0
+    items = db.scalars(query.order_by(Autor.nombre).offset(skip).limit(limit)).all()
+    return list(items), total
 
 
-def obtener(db: Session, autor_id: int):
+def obtener(db: Session, autor_id: int) -> Autor:
     autor = db.get(Autor, autor_id)
     if autor is None:
         raise NoEncontrado("El autor no existe")
     return autor
 
 
-def crear(db: Session, datos: AutorCrear):
+def crear(db: Session, datos: AutorCrear) -> Autor:
     existente = db.scalar(select(Autor).where(Autor.nombre.ilike(datos.nombre)))
     if existente is not None:
         raise Conflicto("Ya existe un autor con ese nombre")
@@ -37,7 +48,7 @@ def crear(db: Session, datos: AutorCrear):
     return autor
 
 
-def actualizar(db: Session, autor_id: int, datos: AutorActualizar):
+def actualizar(db: Session, autor_id: int, datos: AutorActualizar) -> Autor:
     autor = db.get(Autor, autor_id)
     if autor is None:
         raise NoEncontrado("El autor no existe")
@@ -59,7 +70,7 @@ def actualizar(db: Session, autor_id: int, datos: AutorActualizar):
     return autor
 
 
-def eliminar(db: Session, autor_id: int):
+def eliminar(db: Session, autor_id: int) -> None:
     autor = db.get(Autor, autor_id)
     if autor is None:
         raise NoEncontrado("El autor no existe")
@@ -74,8 +85,8 @@ def eliminar(db: Session, autor_id: int):
     db.commit()
 
 
-def listar_libros(db: Session, autor_id: int):
+def listar_libros(db: Session, autor_id: int) -> list[Libro]:
     autor = db.get(Autor, autor_id)
     if autor is None:
         raise NoEncontrado("El autor no existe")
-    return autor.libros
+    return list(autor.libros)

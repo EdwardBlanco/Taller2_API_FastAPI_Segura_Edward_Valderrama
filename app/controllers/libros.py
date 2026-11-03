@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..core.exceptions import Conflicto, NoEncontrado, ReglaNegocio
@@ -9,34 +9,42 @@ from ..schemas.libros import LibroActualizar, LibroCrear, OrdenLibro
 def listar(
     db: Session,
     skip: int = 0,
-    limit: int = 20,
+    limit: int = 10,
     buscar: str | None = None,
     autor: str | None = None,
     categoria_id: int | None = None,
     desde: int | None = None,
     hasta: int | None = None,
     orden: OrdenLibro | None = None,
-):
+) -> tuple[list[Libro], int]:
     consulta = select(Libro).options(
         selectinload(Libro.autor),
         selectinload(Libro.categorias),
         selectinload(Libro.prestamos),
     )
+    conteo = select(func.count(func.distinct(Libro.id)))
 
     if buscar:
-        consulta = consulta.where(Libro.titulo.ilike(f"%{buscar.strip()}%"))
+        termino = f"%{buscar.strip()}%"
+        consulta = consulta.where(Libro.titulo.ilike(termino))
+        conteo = conteo.where(Libro.titulo.ilike(termino))
 
     if autor:
-        consulta = consulta.join(Libro.autor).where(Autor.nombre.ilike(f"%{autor.strip()}%"))
+        termino_autor = f"%{autor.strip()}%"
+        consulta = consulta.join(Libro.autor).where(Autor.nombre.ilike(termino_autor))
+        conteo = conteo.join(Libro.autor).where(Autor.nombre.ilike(termino_autor))
 
     if categoria_id:
         consulta = consulta.join(Libro.categorias).where(Categoria.id == categoria_id)
+        conteo = conteo.join(Libro.categorias).where(Categoria.id == categoria_id)
 
     if desde is not None:
         consulta = consulta.where(Libro.anio_publicacion >= desde)
+        conteo = conteo.where(Libro.anio_publicacion >= desde)
 
     if hasta is not None:
         consulta = consulta.where(Libro.anio_publicacion <= hasta)
+        conteo = conteo.where(Libro.anio_publicacion <= hasta)
 
     if orden == OrdenLibro.titulo:
         consulta = consulta.order_by(Libro.titulo.asc())
@@ -47,11 +55,12 @@ def listar(
     else:
         consulta = consulta.order_by(Libro.titulo.asc())
 
-    consulta = consulta.offset(skip).limit(limit)
-    return db.scalars(consulta).all()
+    total = db.scalar(conteo) or 0
+    items = db.scalars(consulta.offset(skip).limit(limit)).all()
+    return list(items), total
 
 
-def obtener(db: Session, libro_id: int):
+def obtener(db: Session, libro_id: int) -> Libro:
     libro = db.scalar(
         select(Libro)
         .options(
@@ -66,7 +75,7 @@ def obtener(db: Session, libro_id: int):
     return libro
 
 
-def crear(db: Session, datos: LibroCrear):
+def crear(db: Session, datos: LibroCrear) -> Libro:
     autor = db.get(Autor, datos.autor_id)
     if autor is None:
         raise NoEncontrado("El autor no existe")
@@ -96,7 +105,7 @@ def crear(db: Session, datos: LibroCrear):
     return libro
 
 
-def actualizar(db: Session, libro_id: int, datos: LibroActualizar):
+def actualizar(db: Session, libro_id: int, datos: LibroActualizar) -> Libro:
     libro = db.get(Libro, libro_id)
     if libro is None:
         raise NoEncontrado("El libro no existe")
@@ -138,7 +147,7 @@ def actualizar(db: Session, libro_id: int, datos: LibroActualizar):
     return libro
 
 
-def eliminar(db: Session, libro_id: int):
+def eliminar(db: Session, libro_id: int) -> None:
     libro = db.get(Libro, libro_id)
     if libro is None:
         raise NoEncontrado("El libro no existe")

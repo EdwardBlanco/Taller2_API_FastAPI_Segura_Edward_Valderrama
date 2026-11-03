@@ -1,7 +1,9 @@
-import re
 from datetime import datetime
+import re
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from .prestamos import PrestamoLeer
 
 
 class SocioCrear(BaseModel):
@@ -72,6 +74,35 @@ class SocioActualizar(BaseModel):
         return None
 
 
+class SocioActualizarPropio(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    nombre: str | None = Field(default=None, min_length=2, max_length=100)
+    telefono: str | None = None
+
+    @field_validator("nombre")
+    @classmethod
+    def validar_nombre(cls, valor: str | None) -> str | None:
+        if valor is not None:
+            valor = valor.strip()
+            if not valor:
+                raise ValueError("El nombre no puede estar vacío")
+            return valor.title()
+        return None
+
+    @field_validator("telefono")
+    @classmethod
+    def validar_telefono(cls, valor: str | None) -> str | None:
+        if valor is not None:
+            valor = valor.strip()
+            if not valor:
+                return None
+            if not re.match(r"^[\d\s\+]{7,15}$", valor):
+                raise ValueError("El teléfono debe tener entre 7 y 15 caracteres y solo contener dígitos, espacios o +")
+            return valor
+        return None
+
+
 class SocioLeer(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -81,3 +112,8 @@ class SocioLeer(BaseModel):
     telefono: str | None = None
     activo: bool
     fecha_alta: datetime
+
+
+class SocioMultasRespuesta(BaseModel):
+    prestamos: list[PrestamoLeer]
+    total_adeudado: float

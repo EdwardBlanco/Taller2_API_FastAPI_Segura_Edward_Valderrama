@@ -54,6 +54,8 @@ class PrestamoLeer(BaseModel):
     fecha_limite: date
     fecha_devolucion: date | None = None
     multa: float
+    multa_pagada: bool = False
+    registrado_por_id: int | None = None
     estado: str
 
 

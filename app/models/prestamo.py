@@ -9,6 +9,7 @@ from ..core.database import Base
 if TYPE_CHECKING:
     from .libro import Libro
     from .socio import Socio
+    from .usuario import Usuario
 
 
 class Prestamo(Base):
@@ -21,9 +22,12 @@ class Prestamo(Base):
     fecha_limite: Mapped[date] = mapped_column(Date, nullable=False)
     fecha_devolucion: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
     multa: Mapped[float] = mapped_column(Numeric(10, 2, asdecimal=False), default=0.0, nullable=False)
+    multa_pagada: Mapped[bool] = mapped_column(default=False, nullable=False)
+    registrado_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
 
     libro: Mapped["Libro"] = relationship(back_populates="prestamos", lazy="selectin")
     socio: Mapped["Socio"] = relationship(back_populates="prestamos", lazy="selectin")
+    registrado_por: Mapped["Usuario | None"] = relationship(lazy="selectin")
 
     @property
     def estado(self) -> str:

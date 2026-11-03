@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..core.exceptions import Conflicto, NoEncontrado
@@ -6,19 +6,21 @@ from ..models import Categoria
 from ..schemas.categorias import CategoriaActualizar, CategoriaCrear
 
 
-def listar(db: Session, skip: int = 0, limit: int = 100):
+def listar(db: Session, skip: int = 0, limit: int = 10) -> tuple[list[Categoria], int]:
     query = select(Categoria).order_by(Categoria.nombre).offset(skip).limit(limit)
-    return db.scalars(query).all()
+    total = db.scalar(select(func.count(Categoria.id))) or 0
+    items = db.scalars(query).all()
+    return list(items), total
 
 
-def obtener(db: Session, categoria_id: int):
+def obtener(db: Session, categoria_id: int) -> Categoria:
     categoria = db.get(Categoria, categoria_id)
     if categoria is None:
         raise NoEncontrado("La categoría no existe")
     return categoria
 
 
-def crear(db: Session, datos: CategoriaCrear):
+def crear(db: Session, datos: CategoriaCrear) -> Categoria:
     existente = db.scalar(select(Categoria).where(Categoria.nombre == datos.nombre))
     if existente is not None:
         raise Conflicto("Ya existe una categoría con ese nombre")
@@ -33,7 +35,7 @@ def crear(db: Session, datos: CategoriaCrear):
     return categoria
 
 
-def actualizar(db: Session, categoria_id: int, datos: CategoriaActualizar):
+def actualizar(db: Session, categoria_id: int, datos: CategoriaActualizar) -> Categoria:
     categoria = db.get(Categoria, categoria_id)
     if categoria is None:
         raise NoEncontrado("La categoría no existe")
@@ -57,7 +59,7 @@ def actualizar(db: Session, categoria_id: int, datos: CategoriaActualizar):
     return categoria
 
 
-def eliminar(db: Session, categoria_id: int):
+def eliminar(db: Session, categoria_id: int) -> None:
     categoria = db.get(Categoria, categoria_id)
     if categoria is None:
         raise NoEncontrado("La categoría no existe")
