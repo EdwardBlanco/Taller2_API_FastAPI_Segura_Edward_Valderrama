@@ -556,19 +556,24 @@ tbody tr:hover {
 }
 
 .book-cover-box {
-  height: 170px;
-  background: var(--surface-subtle);
+  height: 220px;
+  background: #f1f1ee;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 10px;
   overflow: hidden;
 }
 
 .book-cover-box img {
-  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .book-cover-placeholder {

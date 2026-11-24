@@ -79,22 +79,6 @@ onMounted(() => {
       <router-view />
     </main>
 
-    <footer class="footer">
-      <div class="footer-inner">
-        <span>Sistema de Gestión de Biblioteca · API v1</span>
-        <div>
-          <span
-            class="status-dot"
-            :class="{
-              ok: apiHealth.status === 'ok',
-              error: apiHealth.status === 'error',
-            }"
-          />
-          <span v-if="apiHealth.status === 'ok'">API y base de datos conectadas</span>
-          <span v-else-if="apiHealth.status === 'error'">Sin conexión con la API</span>
-          <span v-else>Verificando conexión...</span>
-        </div>
-      </div>
-    </footer>
+
   </div>
 </template>
